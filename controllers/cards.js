@@ -48,7 +48,7 @@ module.exports.likeCard = (req, res) => {
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        res.status(404).send({ massage: 'Карточка не найдена' });
+        res.status(400).send({ massage: 'Карточка не найдена' });
         return;
       }
       res.send(card);
@@ -66,7 +66,7 @@ module.exports.dislikeCard = (req, res) => {
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        res.status(404).send({ massage: 'Карточка не найдена' });
+        res.status(400).send({ massage: 'Карточка не найдена' });
         return;
       }
       res.send(card);
