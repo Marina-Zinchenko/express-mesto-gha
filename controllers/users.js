@@ -28,7 +28,7 @@ module.exports.getUserById = (req, res) => {
       if (user === null) {
         return res.status(404).send({ message: 'Пользователь не найден' });
       }
-      return res.status(201).send(user);
+      return res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -45,7 +45,7 @@ module.exports.editUserData = (req, res) => {
       .then((user) => res.send(user))
       .catch((err) => {
         if (err.name === 'ValidationError') {
-          res.status(401).send({ message: 'Некорректные данные' });
+          res.status(400).send({ message: 'Некорректные данные' });
         } else {
           res.status(400).send({ message: 'Пользователь не найден' });
         }
