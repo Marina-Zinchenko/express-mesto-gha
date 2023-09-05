@@ -47,10 +47,7 @@ module.exports.addLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
     .then((card) => {
-      if (!card) {
-        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
-      }
-      return res.send(card);
+      res.status(200).end(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -64,10 +61,7 @@ module.exports.deleteLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
     .then((card) => {
-      if (!card) {
-        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
-      }
-      return res.send(card);
+      res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
