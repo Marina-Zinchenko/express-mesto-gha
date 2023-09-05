@@ -43,12 +43,12 @@ module.exports.deleteCard = (req, res) => {
   }
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.addLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        res.status(400).send({ massage: 'Карточка не найдена' });
+        res.status(404).send({ massage: 'Карточка не найдена' });
         return;
       }
       res.send(card);
@@ -61,12 +61,12 @@ module.exports.likeCard = (req, res) => {
     });
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.deleteLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        res.status(400).send({ massage: 'Карточка не найдена' });
+        res.status(404).send({ massage: 'Карточка не найдена' });
         return;
       }
       res.send(card);
