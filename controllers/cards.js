@@ -48,14 +48,13 @@ module.exports.addLikeCard = (req, res) => {
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        res.status(404).send({ massage: 'Карточка не найдена по ID' });
-        return;
+        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
       }
-      res.send(card);
+      return res.send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(404).send({ message: 'Карточка не найдена' });
+        return res.status(400).send({ message: 'Карточка не найдена' });
       }
       return res.status(400).send({ message: 'Некорректный ID карточки' });
     });
@@ -66,14 +65,13 @@ module.exports.deleteLikeCard = (req, res) => {
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        res.status(404).send({ massage: 'Карточка не найдена по ID' });
-        return;
+        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
       }
-      res.send(card);
+      return res.send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(404).send({ message: 'Карточка не найдена' });
+        return res.status(400).send({ message: 'Карточка не найдена' });
       }
       return res.status(400).send({ message: 'Некорректный ID карточки' });
     });
