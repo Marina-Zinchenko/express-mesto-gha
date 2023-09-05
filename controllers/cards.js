@@ -46,35 +46,39 @@ module.exports.deleteCard = (req, res) => {
 module.exports.addLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
+    .orFail(new Error('NotValidId'))
     .then((card) => {
-      if (!card) {
-        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
-      }
-      return res.status(200).send(card);
+      res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Карточка не найдена' });
+        res.status(400).send({ message: 'Некорректный ID карточки' });
         return;
       }
-      res.status(400).send({ message: 'Некорректный ID карточки' });
+      if (err.message === 'NotValidId') {
+        res.status(404).send({ message: 'Карточка не найдена' });
+        return;
+      }
+      res.status(500).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
 module.exports.deleteLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
+    .orFail(new Error('NotValidId'))
     .then((card) => {
-      if (!card) {
-        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
-      }
-      return res.status(200).send(card);
+      res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Карточка не найдена' });
+        res.status(400).send({ message: 'Некорректный ID карточки' });
         return;
       }
-      res.status(400).send({ message: 'Некорректный ID карточки' });
+      if (err.message === 'NotValidId') {
+        res.status(404).send({ message: 'Карточка не найдена' });
+        return;
+      }
+      res.status(500).send({ message: 'На сервере произошла ошибка' });
     });
 };
