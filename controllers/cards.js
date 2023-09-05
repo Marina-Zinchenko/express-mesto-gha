@@ -35,7 +35,7 @@ module.exports.deleteCard = (req, res) => {
           res.status(404).send({ message: 'Карточка не найдена' });
           return;
         }
-        res.send({ massage: 'Карточка удалена' });
+        res.status(200).send({ massage: 'Карточка удалена' });
       })
       .catch(() => res.status(404).send({ message: 'Карточка не найдена' }));
   } else {
@@ -47,13 +47,17 @@ module.exports.addLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
     .then((card) => {
-      res.status(200).end(card);
+      if (!card) {
+        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
+      }
+      return res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Карточка не найдена' });
+        res.status(400).send({ message: 'Карточка не найдена' });
+        return;
       }
-      return res.status(400).send({ message: 'Некорректный ID карточки' });
+      res.status(400).send({ message: 'Некорректный ID карточки' });
     });
 };
 
@@ -61,12 +65,16 @@ module.exports.deleteLikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
     .then((card) => {
-      res.status(200).send(card);
+      if (!card) {
+        return res.status(404).send({ massage: 'Карточка не найдена по ID' });
+      }
+      return res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Карточка не найдена' });
+        res.status(400).send({ message: 'Карточка не найдена' });
+        return;
       }
-      return res.status(400).send({ message: 'Некорректный ID карточки' });
+      res.status(400).send({ message: 'Некорректный ID карточки' });
     });
 };
