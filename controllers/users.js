@@ -48,24 +48,28 @@ module.exports.createUser = (req, res, next) => {
         avatar,
         email,
         password: hash,
-      })
-        .then((user) => res.status(201).send({
-          name: user.name,
-          about: user.about,
-          avatar: user.avatar,
-          email: user.email,
-        }))
-        .catch((err) => {
-          if (err.name === 'MongoServerError' || err.code === 11000) {
-            next(new ConflictError('Пользователь с такой почтой уже зарегистрирован.'));
-          } else if (err.name === 'ValidationError') {
-            next(new BadRequest('Переданы неккоректные данные для создания пользователя.'));
-          } else {
-            next(err);
-          }
-        });
+      });
     })
-    .catch(next);
+    .then((user) => {
+      res.status(201).send({
+        _id: user._id,
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        email: user.email,
+      });
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        throw new ConflictError('Пользователь с таким email уже существует');
+      }
+
+      if (err.code === 11000) {
+        throw new BadRequest('Переданы некорректные данные в метод создания пользователя');
+      }
+
+      return next(err);
+    });
 };
 
 module.exports.getUserById = (req, res, next) => {
