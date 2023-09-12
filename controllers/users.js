@@ -9,7 +9,7 @@ const { secretKey } = require('../utils/constants');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.status(200).send(users))
+    .then((users) => res.status(200).send({ data: users }))
     .catch((err) => {
       next(err);
     });
@@ -21,7 +21,7 @@ module.exports.getUserMe = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      return res.send(user);
+      return res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -41,13 +41,15 @@ module.exports.createUser = (req, res, next) => {
   } = req.body;
 
   bcrypt.hash(password, 10)
-    .then((hash) => User.create({
-      name,
-      about,
-      avatar,
-      email,
-      password: hash,
-    }))
+    .then((hash) => {
+      User.create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      });
+    })
     .then((user) => {
       res.send({
         _id: user._id,
@@ -58,13 +60,15 @@ module.exports.createUser = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (err.code === 11000) {
-        next(new ConflictError('Пользователь с таким email уже существует'));
-      } else if (err.name === 'ValidationError') {
-        next(new BadRequest('Переданы некорректные данные в метод создания пользователя'));
-      } else {
-        next(err);
+      if (err.name === 'ValidationError') {
+        return next(new ConflictError('Переданы некорректные данные в метод создания пользователя'));
       }
+
+      if (err.code === 11000) {
+        return next(new BadRequest('Пользователь с таким email уже существует'));
+      }
+
+      return next(err);
     });
 };
 
@@ -74,7 +78,7 @@ module.exports.getUserById = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.status(200).send(user);
+      res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -91,7 +95,7 @@ module.exports.editUserProfile = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.status(200).send(user);
+      res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -107,7 +111,7 @@ module.exports.editUserAvatar = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.send(user);
+      res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -118,21 +122,38 @@ module.exports.editUserAvatar = (req, res, next) => {
 };
 
 module.exports.login = (req, res, next) => {
-  const { email } = req.body;
+  const { email, password } = req.body;
 
   User.findOne({ email }).select('+password')
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, secretKey, { expiresIn: '7d' });
+      if (!user) {
+        throw new UnauthorizedError('Неправильные логин или пароль');
+      }
 
-      res
-        .cookie('jwt', token, {
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-          httpOnly: true,
-          sameSite: true,
-        })
-        .send({ message: 'Успешная авторизация.' });
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            throw new UnauthorizedError('Неправильные логин или пароль');
+          }
+
+          const token = jwt.sign({ _id: user._id }, secretKey, { expiresIn: '7d' });
+
+          res
+            .cookie('jwt', token, {
+              maxAge: 7 * 24 * 60 * 60 * 1000,
+              httpOnly: true,
+              sameSite: true,
+            });
+          res.send({
+            _id: user._id,
+            name: user.name,
+            about: user.about,
+            avatar: user.avatar,
+            email: user.email,
+          });
+        });
     })
-    .catch(() => {
-      next(new UnauthorizedError('Неправильные логин или пароль'));
+    .catch((err) => {
+      next(err);
     });
 };
