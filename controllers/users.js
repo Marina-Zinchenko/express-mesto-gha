@@ -9,7 +9,7 @@ const { secretKey } = require('../utils/constants');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.status(200).send({ data: users }))
+    .then((users) => res.status(200).send(users))
     .catch((err) => {
       next(err);
     });
@@ -21,7 +21,7 @@ module.exports.getUserMe = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      return res.send({ data: user });
+      return res.send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -49,9 +49,6 @@ module.exports.createUser = (req, res, next) => {
       password: hash,
     }))
     .then((user) => {
-      if (!user) {
-        throw new NotFoundError('Пользователь не найден');
-      }
       res.send({
         _id: user._id,
         name: user.name,
@@ -61,13 +58,13 @@ module.exports.createUser = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return next(new BadRequest('Переданы некорректные данные в метод создания пользователя'));
-      }
       if (err.code === 11000) {
-        return next(new ConflictError('Пользователь с таким email уже существует'));
+        next(new ConflictError('Пользователь с таким email уже существует'));
+      } else if (err.name === 'ValidationError') {
+        next(new BadRequest('Переданы некорректные данные в метод создания пользователя'));
+      } else {
+        next(err);
       }
-      return next(err);
     });
 };
 
@@ -77,7 +74,7 @@ module.exports.getUserById = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.status(200).send({ data: user });
+      res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -94,7 +91,7 @@ module.exports.editUserProfile = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.status(200).send({ data: user });
+      res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -110,7 +107,7 @@ module.exports.editUserAvatar = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.send({ data: user });
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -121,39 +118,21 @@ module.exports.editUserAvatar = (req, res, next) => {
 };
 
 module.exports.login = (req, res, next) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
 
   User.findOne({ email }).select('+password')
     .then((user) => {
-      if (!user) {
-        throw new UnauthorizedError('Неправильные логин или пароль');
-      }
+      const token = jwt.sign({ _id: user._id }, secretKey, { expiresIn: '7d' });
 
-      return bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            throw new UnauthorizedError('Неправильные логин или пароль');
-          }
-
-          const token = jwt.sign({ _id: user._id }, secretKey, { expiresIn: '7d' });
-
-          res
-            .cookie('jwt', token, {
-              maxAge: 7 * 24 * 60 * 60 * 1000,
-              httpOnly: true,
-              sameSite: true,
-            });
-
-          res.send({
-            _id: user._id,
-            name: user.name,
-            about: user.about,
-            avatar: user.avatar,
-            email: user.email,
-          });
-        });
+      res
+        .cookie('jwt', token, {
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          httpOnly: true,
+          sameSite: true,
+        })
+        .send({ message: 'Успешная авторизация.' });
     })
-    .catch((err) => {
-      next(err);
+    .catch(() => {
+      next(new UnauthorizedError('Неправильные логин или пароль'));
     });
 };

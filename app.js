@@ -7,7 +7,6 @@ const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 const { NotFoundError } = require('./errors/NotFoundError');
 const validationErrorServer = require('./middlewares/validationErrorServer');
-const auth = require('./middlewares/auth');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
@@ -29,11 +28,6 @@ mongoose.connect(DB_URL, {
 });
 
 app.use('/', require('./routes/index'));
-
-app.use('/users', require('./routes/users'));
-
-app.use(auth);
-app.use('/cards', require('./routes/cards'));
 
 app.use('*', (req, res, next) => {
   next(new NotFoundError('Страница не найдена'));

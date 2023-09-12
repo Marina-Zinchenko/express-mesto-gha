@@ -10,18 +10,18 @@ module.exports.validateLogin = celebrate({
 
 module.exports.validateCreateUser = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().min(2).max(30),
-    about: Joi.string().min(2).max(30),
-    avatar: Joi.string().regex(linkRegex),
     email: Joi.string().required().email(),
     password: Joi.string().required(),
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().pattern(linkRegex),
   }),
 });
 
 module.exports.validateAddCard = celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
-    link: Joi.string().required().regex(linkRegex),
+    link: Joi.string().required().pattern(linkRegex),
   }),
 });
 
