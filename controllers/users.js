@@ -1,11 +1,11 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { NotFoundError } = require('../errors/NotFoundError');
-const { BadRequest } = require('../errors/BadRequest');
-const { ConflictError } = require('../errors/ConflictError');
-const { UnauthorizedError } = require('../errors/UnauthorizedError');
+const NotFoundError = require('../errors/NotFoundError');
+const BadRequest = require('../errors/BadRequest');
+const ConflictError = require('../errors/ConflictError');
+const UnauthorizedError = require('../errors/UnauthorizedError');
 const User = require('../models/user');
-const { secretKey } = require('../utils/constants');
+
+const getToken = require('../utils/getToken');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
@@ -55,13 +55,13 @@ module.exports.createUser = (req, res, next) => {
           about: user.about,
           avatar: user.avatar,
         }))
-        .catch((err) => {
-          if (err.code === 11000 || err.name === 'MongoServerError') {
+        .catch((error) => {
+          if (error.name === 'MongoServerError' || error.code === 11000) {
             next(new ConflictError('Пользователь с такой почтой уже зарегистрирован.'));
-          } else if (err.name === 'ValidationError') {
+          } else if (error.name === 'ValidationError') {
             next(new BadRequest('Переданы неккоректные данные для создания пользователя.'));
           } else {
-            next(err);
+            next(error);
           }
         });
     })
@@ -118,38 +118,20 @@ module.exports.editUserAvatar = (req, res, next) => {
 };
 
 module.exports.login = (req, res, next) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
 
-  User.findOne({ email }).select('+password')
+  User.findOne({ email })
+    .select('+password')
     .then((user) => {
-      if (!user) {
-        throw new UnauthorizedError('Неправильные логин или пароль');
-      }
-
-      return bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            throw new UnauthorizedError('Неправильные логин или пароль');
-          }
-
-          const token = jwt.sign({ _id: user._id }, secretKey, { expiresIn: '7d' });
-
-          res
-            .cookie('jwt', token, {
-              maxAge: 7 * 24 * 60 * 60 * 1000,
-              httpOnly: true,
-              sameSite: true,
-            });
-          res.send({
-            _id: user._id,
-            name: user.name,
-            about: user.about,
-            avatar: user.avatar,
-            email: user.email,
-          });
-        });
+      const token = getToken(user._id);
+      res
+        .cookie('jwt', token, {
+          maxage: 3600000 * 24 * 7,
+          httpOnly: true,
+        })
+        .send({ message: 'Успешная авторизация.' });
     })
-    .catch((err) => {
-      next(err);
+    .catch(() => {
+      next(new UnauthorizedError('Неправильные почта или пароль.'));
     });
 };
