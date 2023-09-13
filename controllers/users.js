@@ -9,10 +9,13 @@ const getToken = require('../utils/getToken');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.status(200).send({ data: users }))
-    .catch((err) => {
-      next(err);
-    });
+    .then((users) => {
+      if (!users) {
+        throw new NotFoundError('Пользователи не найдены.');
+      }
+      res.status(200).send(users);
+    })
+    .catch(next);
 };
 
 module.exports.getUserMe = (req, res, next) => {
@@ -74,13 +77,14 @@ module.exports.getUserById = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.send({ data: user });
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return next(new BadRequest('Некорректный ID пользователя'));
+        next(new BadRequest('Некорректный ID пользователя'));
+      } else {
+        next(err);
       }
-      return next(err);
     });
 };
 
@@ -91,13 +95,14 @@ module.exports.editUserProfile = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.send({ data: user });
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return next(new BadRequest('Некорректные данные'));
+        next(new BadRequest('Некорректные данные'));
+      } else {
+        next(err);
       }
-      return next(err);
     });
 };
 
@@ -107,13 +112,14 @@ module.exports.editUserAvatar = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      res.send({ data: user });
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return next(new BadRequest('Некорректные данные'));
+        next(new BadRequest('Некорректные данные'));
+      } else {
+        next(err);
       }
-      return next(err);
     });
 };
 
