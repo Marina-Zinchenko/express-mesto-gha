@@ -28,50 +28,33 @@ module.exports.addCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  const { cardId } = req.params;
-
-  Card.findById(cardId)
+  Card.findById(req.params.cardId)
+    .orFail(() => new NotFoundError('Карточка не найдена.'))
     .then((card) => {
-      if (!card) {
-        return next(new NotFoundError('Карточка не найдена'));
+      if (JSON.stringify(card.owner) !== JSON.stringify(req.user.payload)) {
+        return next(new ForbiddenError('Невозможно удалить чужую карточку.'));
       }
-
-      if (card.owner.toString() !== req.user._id) {
-        return next(new ForbiddenError('Удаление чужой карточки'));
-      }
-
-      return Card.findByIdAndRemove(cardId)
-        .populate(['owner', 'likes'])
-        .then((myCard) => {
-          res.send({ data: myCard });
-        })
-        .catch((err) => {
-          next(err);
-        });
+      return card.remove()
+        .then(() => res.send({ message: 'Карточка удалена.' }));
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        throw next(new BadRequest('Некорректный ID карточки'));
-      }
-      throw next(err);
-    });
+    .catch(next);
 };
 
 module.exports.addLikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: 'true' })
     .populate(['owner', 'likes'])
+    .orFail(new Error('NotValidId'))
     .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Карточка не найдена');
-      }
       res.status(200).send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(BadRequest).send({ message: 'Некорректный ID карточки' });
-        return next(new BadRequest('Некорректный ID карточки'));
+        next(new BadRequest({ message: 'Некорректный ID карточки' }));
+      } else if (err.message === 'NotValidId') {
+        next(new NotFoundError({ message: 'Карточка не найдена' }));
+      } else {
+        next(err);
       }
-      return next(err);
     });
 };
 

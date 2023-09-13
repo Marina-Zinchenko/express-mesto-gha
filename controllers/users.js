@@ -33,40 +33,39 @@ module.exports.getUserMe = (req, res, next) => {
 
 module.exports.createUser = (req, res, next) => {
   const {
+    email,
+    password,
     name,
     about,
     avatar,
-    email,
-    password,
   } = req.body;
 
   bcrypt.hash(password, 10)
     .then((hash) => {
       User.create({
+        email,
+        password: hash,
         name,
         about,
         avatar,
-        email,
-        password: hash,
-      });
+      })
+        .then((user) => res.status(201).send({
+          email: user.email,
+          name: user.name,
+          about: user.about,
+          avatar: user.avatar,
+        }))
+        .catch((err) => {
+          if (err.name === 'MongoServerError' || err.code === 11000) {
+            next(new ConflictError('Пользователь с такой почтой уже зарегистрирован.'));
+          } else if (err.name === 'ValidationError') {
+            next(new BadRequest('Переданы неккоректные данные для создания пользователя.'));
+          } else {
+            next(err);
+          }
+        });
     })
-    .then((user) => {
-      res.status(201).send({
-        name: user.name,
-        about: user.about,
-        avatar: user.avatar,
-        email: user.email,
-      });
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new ConflictError('Пользователь с таким email уже существует'));
-      } else if (err.code === 11000) {
-        next(new BadRequest('Переданы некорректные данные в метод создания пользователя'));
-      } else {
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 module.exports.getUserById = (req, res, next) => {
