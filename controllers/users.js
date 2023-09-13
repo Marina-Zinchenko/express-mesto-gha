@@ -19,19 +19,9 @@ module.exports.getUsers = (req, res, next) => {
 };
 
 module.exports.getUserMe = (req, res, next) => {
-  User.findById(req.user._id)
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError('Пользователь не найден');
-      }
-      return res.send({ data: user });
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return next(new BadRequest('Некорректный ID пользователя'));
-      }
-      return next(err);
-    });
+  User.findById(req.user.payload)
+    .then((user) => res.send(user))
+    .catch(next);
 };
 
 module.exports.createUser = (req, res, next) => {
@@ -72,34 +62,32 @@ module.exports.createUser = (req, res, next) => {
 };
 
 module.exports.getUserById = (req, res, next) => {
-  User.findById(req.params.userId)
+  User.findById(req.params.id)
     .then((user) => {
       if (!user) {
-        throw new NotFoundError('Пользователь не найден');
-      }
-      res.send(user);
+        next(new NotFoundError('Пользователь не найден.'));
+      } else res.send(user);
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadRequest('Некорректный ID пользователя'));
-      } else {
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 module.exports.editUserProfile = (req, res, next) => {
   const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: 'true', runValidators: true })
+  User.findByIdAndUpdate(
+    req.user.payload,
+    { name, about },
+    {
+      new: true,
+      runValidators: true,
+      upsert: false,
+    },
+  )
     .then((user) => {
-      if (!user) {
-        throw new NotFoundError('Пользователь не найден');
-      }
       res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new BadRequest('Некорректные данные'));
+        next(new BadRequest('Передан некорректный id пользователя.'));
       } else {
         next(err);
       }
@@ -107,16 +95,23 @@ module.exports.editUserProfile = (req, res, next) => {
 };
 
 module.exports.editUserAvatar = (req, res, next) => {
-  User.findByIdAndUpdate(req.user._id, { avatar: req.body.avatar }, { new: 'true', runValidators: true })
+  const { avatar } = req.body;
+  User.findByIdAndUpdate(
+    req.user.payload,
+    { avatar },
+    {
+      new: true,
+      runValidators: true,
+    },
+  )
     .then((user) => {
       if (!user) {
-        throw new NotFoundError('Пользователь не найден');
-      }
-      res.send(user);
+        next(new NotFoundError('Пользователь не найден.'));
+      } else res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new BadRequest('Некорректные данные'));
+        next(new BadRequest('Передан некорректный id пользователя.'));
       } else {
         next(err);
       }
