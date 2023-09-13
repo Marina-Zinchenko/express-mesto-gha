@@ -10,6 +10,8 @@ const { validateLogin, validateCreateUser } = require('./middlewares/validationE
 const auth = require('./middlewares/auth');
 const NotFoundError = require('./errors/NotFoundError');
 const validationErrorServer = require('./middlewares/validationErrorServer');
+const usersRoutes = require('./routes/users');
+const cardsRoutes = require('./routes/cards');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
@@ -31,12 +33,12 @@ mongoose.connect(DB_URL, {
   useNewUrlParser: true,
 });
 
-app.use('/signin', validateLogin, login);
 app.use('/signup', validateCreateUser, createUser);
+app.use('/signin', validateLogin, login);
 
 app.use(auth);
-app.use('/users', require('./routes/users'));
-app.use('/cards', require('./routes/cards'));
+app.use('/users', usersRoutes);
+app.use('/cards', cardsRoutes);
 
 app.use('*', (req, res, next) => {
   next(new NotFoundError('Страница не найдена'));
