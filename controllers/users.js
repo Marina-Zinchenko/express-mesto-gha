@@ -56,7 +56,7 @@ module.exports.createUser = (req, res, next) => {
           avatar: user.avatar,
         }))
         .catch((err) => {
-          if (err.name === 'MongoServerError' || err.code === 11000) {
+          if (err.code === 11000) {
             next(new ConflictError('Пользователь с такой почтой уже зарегистрирован.'));
           } else if (err.name === 'ValidationError') {
             next(new BadRequest('Переданы неккоректные данные для создания пользователя.'));
