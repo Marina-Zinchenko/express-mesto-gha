@@ -1,24 +1,23 @@
 const mongoose = require('mongoose');
-const { linkRegex } = require('../utils/constants');
 
 const cardSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    minlength: 2,
-    maxlength: 30,
+    required: [true, 'Поле должно быть заполнено'],
+    minlength: [2, 'Минимальное количество символов - 2'],
+    maxlength: [30, 'Максимальное количество символов - 30'],
   },
   link: {
     type: String,
-    required: true,
-    validate: {
-      validator: (url) => linkRegex.test(url),
-      message: 'Неверно указан URL',
+    required: [true, 'Поле должно быть заполнено'],
+    validate(url) {
+      return /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&/=]*)$/.test(url);
     },
+    message: 'Неверно указан URL',
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    required: [true, 'Поле должно быть заполнено'],
     ref: 'user',
   },
   likes: {
