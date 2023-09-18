@@ -57,13 +57,11 @@ module.exports.addLikeCard = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequestError('Некорректный ID карточки'));
-        return;
-      }
-      if (err.message === 'NotValidId') {
+      } else if (err.message === 'NotValidId') {
         next(new NotFoundError('Карточка не найдена'));
-        return;
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -76,12 +74,10 @@ module.exports.deleteLikeCard = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequestError('Некорректный ID карточки'));
-        return;
-      }
-      if (err.message === 'NotValidId') {
+      } else if (err.message === 'NotValidId') {
         next(new NotFoundError('Карточка не найдена'));
-        return;
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
