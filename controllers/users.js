@@ -57,7 +57,7 @@ module.exports.createUser = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (err.code === 11000) {
+      if (err.name === 'MongoServerError' || err.code === 11000) {
         next(new ConflictError(`Пользователь с таким email: ${email} уже зарегистрирован`));
       } else if (err.name === 'ValidationError') {
         next(new BadRequestError('Некорректные данные'));
