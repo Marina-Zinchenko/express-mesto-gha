@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
-const UnauthorizedError = require('../errors/UnauthorizedError');
+const ConflictError = require('../errors/ConflictError');
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
@@ -12,8 +12,8 @@ module.exports.login = (req, res, next) => {
       const token = jwt.sign({ _id: user._id }, 'super-secret', { expiresIn: '7d' });
       res.send({ token });
     })
-    .catch(() => {
-      next(new UnauthorizedError('Пользователь не авторизован'));
+    .catch((err) => {
+      next(err);
     });
 };
 
@@ -26,11 +26,9 @@ module.exports.getUsers = (req, res, next) => {
 };
 
 module.exports.getMeUser = (req, res, next) => {
-  User.findById({})
-    .then((user) => res.status(200).send({ data: user }))
-    .catch((err) => {
-      next(err);
-    });
+  User.findById(req.user._id)
+    .then((user) => res.status(200).send(user))
+    .catch(next);
 };
 
 module.exports.createUser = (req, res, next) => {
@@ -59,7 +57,9 @@ module.exports.createUser = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.code === 11000) {
+        next(new ConflictError(`Пользователь с таким email: ${email} уже зарегистрирован`));
+      } else if (err.name === 'ValidationError') {
         next(new BadRequestError('Некорректные данные'));
       }
       next(err);
