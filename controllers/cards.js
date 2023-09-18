@@ -1,6 +1,7 @@
 const Card = require('../models/card');
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
+const ForbiddenError = require('../errors/ForbiddenError');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
@@ -30,19 +31,21 @@ module.exports.addCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .orFail()
-    .then(() => {
-      res.status(200).send({ massage: 'Карточка удалена' });
-    })
-    .catch((err) => {
-      if (err.message === 'NotValidId') {
-        next(new NotFoundError('Карточка не найдена'));
+  Card.findById(req.params.cardId)
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
+      } else if (card.owner.toString() !== req.user._id) {
+        throw new ForbiddenError('Нельзя удалить чужую карточку');
       } else {
-        next(new BadRequestError('Некорректный ID'));
+        Card.findByIdAndRemove(req.params.cardId)
+          .then(() => {
+            res.status(200).send({ massage: 'Карточка удалена' });
+          })
+          .catch((err) => next(err));
       }
-      next(err);
-    });
+    })
+    .catch((err) => next(err));
 };
 
 module.exports.addLikeCard = (req, res, next) => {
