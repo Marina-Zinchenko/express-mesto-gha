@@ -1,9 +1,9 @@
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
 const UnauthorizedError = require('../errors/UnauthorizedError');
-const jwt = require('jsonwebtoken');
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
@@ -53,6 +53,9 @@ module.exports.createUser = (req, res, next) => {
       res.status(201).send({
         _id: user._id,
         email: user.email,
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
       });
     })
     .catch((err) => {
@@ -69,7 +72,7 @@ module.exports.getUserById = (req, res, next) => {
       if (user === null) {
         next(new NotFoundError('Пользователь не найден'));
       }
-      return res.status(200).send(user);
+      res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {

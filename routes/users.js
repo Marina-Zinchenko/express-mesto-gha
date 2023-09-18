@@ -6,7 +6,7 @@ const {
   validateUserId,
   validateUserUpdate,
   validateUserAvatar,
-} = require('../errors/celebrate');
+} = require('../middlewares/celebrateErrors');
 
 router.get('/', getUsers);
 router.get('/me', getMeUser);

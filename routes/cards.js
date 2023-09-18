@@ -5,7 +5,7 @@ const {
 const {
   validateCardPost,
   validateCardId,
-} = require('../errors/celebrate');
+} = require('../middlewares/celebrateErrors');
 
 router.get('/', getCards);
 router.post('/', validateCardPost, addCard);

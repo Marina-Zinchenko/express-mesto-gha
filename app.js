@@ -1,14 +1,15 @@
 const express = require('express');
+const { errors } = require('celebrate');
 const mongoose = require('mongoose');
 const auth = require('./middlewares/auth');
-const { errors } = require('celebrate');
+
 const NotFoundError = require('./errors/NotFoundError');
 
 const { login, createUser } = require('./controllers/users');
 const {
   validateUserCreate,
   validateUserLogin,
-} = require('./errors/celebrate');
+} = require('./middlewares/celebrateErrors');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
