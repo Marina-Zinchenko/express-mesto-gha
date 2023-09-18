@@ -5,7 +5,6 @@ const ForbiddenError = require('../errors/ForbiddenError');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
-    .populate(['owner', 'likes'])
     .then((cards) => res.send(cards))
     .catch((err) => {
       next(err);
@@ -15,18 +14,13 @@ module.exports.getCards = (req, res, next) => {
 module.exports.addCard = (req, res, next) => {
   const { name, link } = req.body;
   Card.create({ name, link, owner: req.user._id })
-    .then((card) => {
-      Card.findById(card._id)
-        .populate('owner')
-        .then((data) => res.status(201).send(data))
-        .catch(() => next(new NotFoundError('Карточка не найдена')));
-      res.send(card);
-    })
+    .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Некорректные данные'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -45,13 +39,18 @@ module.exports.deleteCard = (req, res, next) => {
           .catch((err) => next(err));
       }
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new BadRequestError('Некорректный ID карточки'));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.addLikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: 'true' })
-    .populate(['owner', 'likes'])
-    .orFail(new Error('NotValidId'))
+    .orFail(new Error('NotFound'))
     .then((card) => {
       res.status(200).send(card);
     })
@@ -70,8 +69,7 @@ module.exports.addLikeCard = (req, res, next) => {
 
 module.exports.deleteLikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: 'true' })
-    .populate(['owner', 'likes'])
-    .orFail(new Error('NotValidId'))
+    .orFail(new Error('NotFound'))
     .then((card) => {
       res.status(200).send(card);
     })
