@@ -73,8 +73,9 @@ module.exports.getUserById = (req, res, next) => {
     .then((user) => {
       if (user === null) {
         next(new NotFoundError('Пользователь не найден'));
+      } else {
+        res.status(200).send(user);
       }
-      res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -87,7 +88,11 @@ module.exports.getUserById = (req, res, next) => {
 
 module.exports.editUserData = (req, res, next) => {
   const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: 'true', runValidators: true })
+  User.findByIdAndUpdate(
+    req.user._id,
+    { name, about },
+    { new: true, runValidators: true },
+  )
     .then((user) => res.send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -100,7 +105,11 @@ module.exports.editUserData = (req, res, next) => {
 
 module.exports.editUserAvatar = (req, res, next) => {
   if (req.user._id) {
-    User.findByIdAndUpdate(req.user._id, { avatar: req.body.avatar }, { new: 'true', runValidators: true })
+    User.findByIdAndUpdate(
+      req.user._id,
+      { avatar: req.body.avatar },
+      { new: true, runValidators: true },
+    )
       .then((user) => res.send(user))
       .catch((err) => {
         if (err.name === 'ValidationError') {
